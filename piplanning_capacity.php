@@ -263,7 +263,7 @@ if(isset($_POST['submit'])) {
 // WHERE ALL THE TABLE DATA GETS GENERATED
 // *************************************************************************************	
 
-$sql = "SELECT iteration_id
+$sql = "SELECT *
 			FROM `cadence`
 			WHERE PI_id = '" . $selection['chosenPID'] . "';";
 
@@ -271,38 +271,57 @@ $result = $db->query($sql);
 
 if ($result->num_rows > 0) {	
 	while ($row = $result->fetch_assoc()) {
-		 $ATiterations[] = $row['iteration_id'];
+		 $PIDiteration[] = $row;
+		 
 	}
 }
 
-foreach ($ATiterations as $element) {
+$sql = "SELECT a.number,a.last_name,a.first_name,b.team_name,b.role
+				FROM employees a
+				JOIN membership b
+				ON a.number = b.polarion_id
+				WHERE b.team_name = '" . $selection['chosenAT'] . "';";
+
+$result = $db->query($sql);
+
+if ($result->num_rows > 0) {	
+	while ($row = $result->fetch_assoc()) {
+		 $ATiteration[] = $row;	 
+	}
+}
+
+if (isset($ATiteration)) {
+
+foreach ($PIDiteration as $element) {
 
 echo <<< EOT
 <table border="1">
 	<tr>
-		<td>Iteration: $element</td>
+		<td>Iteration: {$element['iteration_id']} ({$element['duration']})</td>
 		<td>Iteration Capacity</td>
 		<td><div id="iteration_capacity"></div></td>
 	</tr>
 </table>
 <table border="1">
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
-			<tr><td>Last Name</td><td>First Name</td><td>Role</td><td>% Velocity Available</td><td>Days Off</td><td>Story Points</td></tr>
+			<tr><th>Last Name</th><th>First Name</th><th>Role</th><th>% Velocity Available</th><th>Days Off</th><th>Story Points</th></tr>
+EOT;
+	foreach ($ATiteration as $element1) {
+echo <<< EOT
+			<tr><td>{$element1['last_name']}</td><td>{$element1['first_name']}</td><td>{$element1['role']}</td><td>100</td><td>0</td><td>8</td></tr>
+EOT;
+	}
+echo <<< EOT
+</table>
+
+<table>
+	<tr>
+		<td><button id="submit" name="submit">Submit</button></td>
+		<td><button id="restoreDefaults" name="restoreDefaults">Restore Defaults</button></td>
+	</tr>
 </table>
 EOT;
-
 }
-
-
-
-
-
-
+}	
 
 
 
