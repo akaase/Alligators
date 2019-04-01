@@ -11,14 +11,84 @@ date_default_timezone_set('America/Chicago');
 
 ?>
 
-<link rel="stylesheet" type="text/css" href="css/piplanning_capacity.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js"></script>
+
+<style>
+table#input_data  {
+	table-layout: fixed;
+	width: 100%
+	border-collapse: collapse;
+}
+
+table#input_data td {
+	width: 100%
+	padding-top: 5px;
+  padding-right: 5px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+}
+
+#iteration_containers  {
+	width: 60%
+}
+
+table#iteration_header  {
+	width: 100%;
+  padding-top: 20px;
+  padding-right: 0px;
+  padding-bottom: 0px;
+  padding-left: 0px;
+  border-collapse: collapse;
+  border: 1px solid black;
+}
+
+#iteration_footer {
+	width: 100%;
+	padding-top: 10px;
+  padding-right: 0px;
+  padding-bottom: 50px;
+  padding-left: 0px;
+}
+
+div#cap_total
+{
+	background-color: steelblue;
+	width: 150px;
+	height: 100px;
+	border: 10px solid steelblue;
+	border-radius: 20px;
+	margin: 0px;
+	text-align: center;
+	color: white;
+	font-size: 4em;
+}
+
+div#cap_total_iteration
+{
+	background-color: steelblue;
+	width: 100px;
+	height: 50px;
+	border: 10px solid steelblue;
+	border-radius: 10px;
+	margin: 20 em;
+	text-align: center;
+	color: white;
+	font-size: 2em;
+}
+</style>
+
+
+<!-- <link rel="stylesheet" type="text/css" href="css/piplanning_capacity.css"> -->
 
 <h2>Capacity Calculator</h2>
 
-<table id="table_header1">
+<table id="input_data">
 	<tr>
 		<td style="text-align:right"><label>Agile Release Train:</label></td><td><div id="artSelectorHTML"></div></td>
-		<td rowspan="3"><div id="cap_total">Capacity Total Goes Here.</div></td>
+		<td style="text-align:center" rowspan="3">Total Capacity:<div id="cap_total"><strong>420</strong></div></td>
 	</tr>
 	<tr>
 		<td style="text-align:right"> <label>Agile Team:</label> </td><td><div id="atSelectorHTML"></div></td>
@@ -96,9 +166,6 @@ function selectART() {
 	} else {
 	  var defaultArtID = JSON.parse('<?php echo json_encode($defaultArtID,JSON_HEX_TAG|JSON_HEX_APOS); ?>');
 	}
-	
-	
-	
   var ARTresults = JSON.parse('<?php echo json_encode($ARTresults,JSON_HEX_TAG|JSON_HEX_APOS); ?>');
   var artSelectorHTML = '';
   artSelectorHTML += '<select id="artList" name="artList" onchange="selectAT()">\n';
@@ -243,9 +310,8 @@ function test_input($data) {
   return $data;
 }
 ?>
-
-
 </form>
+
 
 <div id="iterationTables"></div>
 
@@ -276,7 +342,7 @@ if ($result->num_rows > 0) {
 	}
 }
 
-$sql = "SELECT a.number,a.last_name,a.first_name,b.team_name,b.role
+$sql = "SELECT DISTINCT a.number,a.last_name,a.first_name,b.team_name,b.role
 				FROM employees a
 				JOIN membership b
 				ON a.number = b.polarion_id
@@ -295,55 +361,112 @@ if (isset($ATiteration)) {
 foreach ($PIDiteration as $element) {
 
 echo <<< EOT
-<table border="1">
+<div id="iteration_containers">
+<form>
+<table "iteration_header">
 	<tr>
-		<td>Iteration: {$element['iteration_id']} ({$element['duration']})</td>
-		<td>Iteration Capacity</td>
-		<td><div id="iteration_capacity"></div></td>
+		<td style="width: 30%"><h4>Iteration: {$element['iteration_id']} ({$element['duration']})</h4></td>
+		<td style="width: 50%; text-align:right"><h4>Iteration Capacity:</h4></td>
+		<td style="width: 20%" align="right"><div id="cap_total_iteration"><strong>40<strong></div></td>
 	</tr>
 </table>
-<table border="1">
-			<tr><th>Last Name</th><th>First Name</th><th>Role</th><th>% Velocity Available</th><th>Days Off</th><th>Story Points</th></tr>
+
+
+<table class="iteration cell-border compact">
+	<thead>
+		<tr>	
+			<th>Last Name</th>
+			<th>First Name</th>
+			<th>Role</th>
+			<th>% Velocity<br />Available</th>
+			<th>Days<br />Off</th>
+			<th>Story<br />Points</th>
+		</tr>
+	</thead>
+	<tbody>
 EOT;
 	foreach ($ATiteration as $element1) {
+		switch ($element1['role']) {
+			case "SM":
+				$velocity=$preferences[3]['value'];
+				break;
+			case "PO":
+				$velocity=$preferences[2]['value'];
+				break;
+			case "Dev":
+				$velocity=$preferences[1]['value'];
+				break;
+			default:
+				$velocity=100;
+		}
+
 echo <<< EOT
-			<tr><td>{$element1['last_name']}</td><td>{$element1['first_name']}</td><td>{$element1['role']}</td><td>100</td><td>0</td><td>8</td></tr>
+<tr>
+		<td>{$element1['last_name']}</td>
+		<td>{$element1['first_name']}</td>
+		<td>{$element1['role']}</td>
+		<td><input id="velocity.{$element1['number']}.{$element['iteration_id']}" name="velocity.{$element1['number']}.{$element['iteration_id']}" type="text" size="5" value="{$velocity}"></td>
+		<td><input id="daysoff.{$element1['number']}.{$element['iteration_id']}" name="daysoff.{$element1['number']}.{$element['iteration_id']}" type="text" size="5"></td>
+		<td>8</td>
+</tr>
+
 EOT;
 	}
 echo <<< EOT
+	</tbody>
 </table>
-
+<div id="iteration_footer">
 <table>
 	<tr>
 		<td><button id="submit" name="submit">Submit</button></td>
 		<td><button id="restoreDefaults" name="restoreDefaults">Restore Defaults</button></td>
 	</tr>
 </table>
+<p>
+</div>
+</form>
+</div>
+
 EOT;
 }
 }	
-
-
-
  		
 // *************************************************************************************
-// WHERE ALL THE TABLE DATA GETS GENERATED
 // *************************************************************************************	
 		
   } else {
     // Display the Form and the Submit Button AND NOTHING ELSE (Leave this area alone)
 }  
 
-
-
-
-
 ?>
 
-
-
-
 <script>
+$(document).ready(function() {
+    $('table.iteration').DataTable();
+} );
+
+$('table.iteration').DataTable( {
+    "paging": false,
+    "searching": false,
+    "bInfo": false,
+    "lengthChange": false,
+    "order": [[ 0, "asc" ]],
+		"columnDefs": [
+			{
+				targets: [2, 3, 4, 5],
+				className: "dt-body-center"
+			},
+			{
+				targets: [2, 3, 4, 5],
+				className: "dt-head-center"
+			},
+			{
+				targets: [3, 4, 5],
+				orderable: false
+			}
+		]
+} );
+
 document.addEventListener("DOMContentLoaded", selectART);
 document.addEventListener("DOMContentLoaded", selectAT);
 /* 
