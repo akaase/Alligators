@@ -69,14 +69,16 @@ div#cap_total
 div#cap_total_iteration
 {
 	background-color: steelblue;
-	width: 100px;
-	height: 50px;
+	width: 3em;
+	height: 2em;
 	border: 10px solid steelblue;
 	border-radius: 10px;
-	margin: 20 em;
+	margin: 10 em;
 	text-align: center;
+	vertical-align: center;
 	color: white;
 	font-size: 2em;
+	padding-bottom: 1.5em;
 }
 </style>
 
@@ -88,7 +90,7 @@ div#cap_total_iteration
 <table id="input_data">
 	<tr>
 		<td style="text-align:right"><label>Agile Release Train:</label></td><td><div id="artSelectorHTML"></div></td>
-		<td style="text-align:center" rowspan="3">Total Capacity:<div id="cap_total"><strong>420</strong></div></td>
+		<td style="text-align:center" rowspan="3">Total Capacity:<div id="cap_total"></div></td>
 	</tr>
 	<tr>
 		<td style="text-align:right"> <label>Agile Team:</label> </td><td><div id="atSelectorHTML"></div></td>
@@ -148,6 +150,8 @@ if ($result->num_rows > 0) {
 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" onsubmit="return formVars()">
 
 <script>
+var totals = new Object();
+
 // Creates the drop-down for the ART selection
 
 function getFormVars() {
@@ -212,6 +216,23 @@ function formVars() {
   var jsonStr = JSON.stringify(obj);
 	setCookie('formVars', jsonStr, 365);
 }
+
+function calcStoryPoints(velocity,daysoff) {
+	if (velocity === undefined) {
+    velocity = 0;
+  }
+  if (daysoff === undefined) {
+    daysoff = 0;
+  } 
+	result = Math.round( 8 * (velocity / 100) - daysoff);
+	if ( result <= 0 ) {
+		return 0;
+	} else {
+		return result;
+	}
+}
+
+
 
 // COOKIES.............
 
@@ -356,7 +377,23 @@ if ($result->num_rows > 0) {
 	}
 }
 
+
+$sql = "SELECT team_id,iteration_1,iteration_2,iteration_3,iteration_4,iteration_5,iteration_6,
+								sum(iteration_1 + iteration_2 + iteration_3 + iteration_4 + iteration_5 + iteration_6)
+								AS total
+				FROM capacity
+				WHERE program_increment = 'PI-1902'
+				AND team_id='AT-800';";
+								
+if ($result->num_rows > 0) {	
+	while ($row = $result->fetch_assoc()) {
+		 $ATcapacities[] = $row;	 
+	}
+}
+
+
 if (isset($ATiteration)) {
+
 
 foreach ($PIDiteration as $element) {
 
@@ -365,7 +402,7 @@ echo <<< EOT
 <form>
 <table "iteration_header">
 	<tr>
-		<td style="width: 30%"><h4>Iteration: {$element['iteration_id']} ({$element['duration']})</h4></td>
+		<td style="width: 30%"><h4>Iteration: <strong>{$element['iteration_id']}</strong> ({$element['duration']})</h4></td>
 		<td style="width: 50%; text-align:right"><h4>Iteration Capacity:</h4></td>
 		<td style="width: 20%" align="right"><div id="cap_total_iteration"><strong>40<strong></div></td>
 	</tr>
@@ -406,9 +443,34 @@ echo <<< EOT
 		<td>{$element1['first_name']}</td>
 		<td>{$element1['role']}</td>
 		<td><input id="velocity.{$element1['number']}.{$element['iteration_id']}" name="velocity.{$element1['number']}.{$element['iteration_id']}" type="text" size="5" value="{$velocity}"></td>
-		<td><input id="daysoff.{$element1['number']}.{$element['iteration_id']}" name="daysoff.{$element1['number']}.{$element['iteration_id']}" type="text" size="5"></td>
-		<td>8</td>
+		<td><input id="daysoff.{$element1['number']}.{$element['iteration_id']}" name="daysoff.{$element1['number']}.{$element['iteration_id']}" type="text" size="5" value="0"></td>
+		<td><div id="{$element1['number']}-{$element['iteration_id']}-SP"></div></td>
 </tr>
+
+<script>
+
+// When the velocity field is changed...
+
+document.getElementById("velocity.{$element1['number']}.{$element['iteration_id']}").addEventListener('focusout', function (evt) {
+	document.getElementById("{$element1['number']}-{$element['iteration_id']}-SP").innerHTML =
+		calcStoryPoints(document.getElementById("velocity.{$element1['number']}.{$element['iteration_id']}").value,
+		document.getElementById("daysoff.{$element1['number']}.{$element['iteration_id']}").value);
+}
+);
+
+// When the daysoff field is changed...
+
+document.getElementById("daysoff.{$element1['number']}.{$element['iteration_id']}").addEventListener('focusout', function (evt) {
+	document.getElementById("{$element1['number']}-{$element['iteration_id']}-SP").innerHTML =
+		calcStoryPoints(document.getElementById("velocity.{$element1['number']}.{$element['iteration_id']}").value,
+		document.getElementById("daysoff.{$element1['number']}.{$element['iteration_id']}").value);
+}
+);
+
+// Execute at pageload
+totals['.{$element1['number']}.{$element['iteration_id']}.SP'] = calcStoryPoints(document.getElementById("velocity.{$element1['number']}.{$element['iteration_id']}").value,document.getElementById("daysoff.{$element1['number']}.{$element['iteration_id']}").value);
+document.getElementById("{$element1['number']}-{$element['iteration_id']}-SP").innerHTML=totals['.{$element1['number']}.{$element['iteration_id']}.SP'];
+</script>
 
 EOT;
 	}
@@ -426,6 +488,7 @@ echo <<< EOT
 </div>
 </form>
 </div>
+
 
 EOT;
 }
@@ -467,8 +530,11 @@ $('table.iteration').DataTable( {
 		]
 } );
 
+
+
 document.addEventListener("DOMContentLoaded", selectART);
 document.addEventListener("DOMContentLoaded", selectAT);
+console.log(totals);
 /* 
 window.onbeforeunload = function() {
   document.cookie = "formVars=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";

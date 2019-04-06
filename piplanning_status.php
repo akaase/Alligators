@@ -1,8 +1,5 @@
 <?php
 
-
-
-
 $nav_selected = "PIPLANNING";
 $left_buttons = "YES";
 $left_selected = "STATUS";
@@ -160,7 +157,7 @@ while($line = mysqli_fetch_assoc($query2)){
 			</td>
 			<td>
 				<!-- <button id="generate" type="button">Generate (JS)</button> -->
-				<button type="submit">Generate (PHP)</button>
+				<!-- <button type="submit">Generate (PHP)</button> -->
 			</td>
 		</tr>
 	</table>
