@@ -70,7 +70,7 @@ if(isset($_COOKIE[$cookie_name])) {
 	<title>Program Increment (PI) Summary Table</title>
 </head>
 
-<script src="scripts/script.js" defer></script>
+<script src="scripts/script_status.js" defer></script>
 
 <body>
 <h2>
