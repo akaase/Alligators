@@ -142,11 +142,11 @@ $result->close();
 $piidDefault->close();
 ?>
  
-<h3 style = "color: #01B0F1;">Trains -> Grid:</h3>
+<h3 style = "color: #01B0F1;">Trend -> Grid:</h3>
 <body>
   <div id="form_content">
 <form action="#" method="post">
-	<table id="input_table">
+	<table id="input_table" border=1>
 		<tr>
       <td>Select the Program Increment (PI):</td>	
       <td>
@@ -154,19 +154,19 @@ $piidDefault->close();
 			</td>
 		</tr>
 		<tr>
-      <td>
+      <td valign="top">
         <div id="art_table"></div>
 			</td>
-      <td>
-        <div id="table_content4"></div>
+      <td valign="top">
+        <div id="team_table"></div>
 			</td>
 		</tr>
     <tr>
       <td>
-        <div id="chart_div"></div>
+        <div id="art_chart"></div>
 			</td>
       <td>
-        <div id="chart2_div"></div>
+        <div id="team_chart"></div>
 			</td>
 		</tr>      
   </table>
@@ -183,9 +183,7 @@ $piidDefault->close();
   <script type="text/javascript">
   // Load the Visualization API and the piechart package.
     google.load('visualization', '1', {'packages':['corechart']});
-    // Set a callback to run when the Google Visualization API is loaded.
     google.setOnLoadCallback(drawChart);
-
     function drawChart() {
       var data = new google.visualization.DataTable(<?=$jsonTable?>);
       var options = {
@@ -195,8 +193,7 @@ $piidDefault->close();
           height: 600,
           pieSliceText: 'value'
         };
-
-        var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+        var chart = new google.visualization.BarChart(document.getElementById('art_chart'));
         chart.draw(data, options);
         google.visualization.events.addListener(chart, 'select', selectHandler);
 
@@ -237,18 +234,15 @@ $piidDefault->close();
           if (message == '') {
           message = 'nothing';
           }
-          //alert('You selected ' + message); 
           getClickValueForSecondChart(category, defaultPiID);
         }
 
         function getClickValueForSecondChart(category, defaultPiID)
         {
-          alert('You received ' + defaultPiID + ' xxx ' + category);
-
             var grandTotal=0;
             var rowArray = [];
             rowArray[0] = ['Agile Release Teams', 'Total Capacity for Teams (Story Points)'];
-            var htmlTable = '<table id="output_table">';
+            var htmlTable = '<table id="output_table2">';
             htmlTable += '<tr>';
             for (i = 0; i <= rowArray[0].length - 1; i++) {
                 htmlTable += '<th>' + rowArray[0][i] + '</th>';
@@ -257,15 +251,15 @@ $piidDefault->close();
             var twoDimData =[];
             var grandTotal=0;
             ArtAtTotal.forEach(
-                function(element) {
-                    if ( element.pi == defaultPiID && element.parent_name==category ) {                
-                        var data3fields = [];               
-                        data3fields.push(element.team_name.trim());      
-                        data3fields.push(element.total.trim());            
-                        twoDimData.push(data3fields);
-                        grandTotal+=Number(element.total.trim());
-                    }
-                } 
+              function(element) {
+                if ( element.pi == defaultPiID && element.parent_name==category ) {                
+                    var data3fields = [];               
+                    data3fields.push(element.team_name.trim());      
+                    data3fields.push(element.total.trim());            
+                    twoDimData.push(data3fields);
+                    grandTotal+=Number(element.total.trim());
+                }
+              } 
             );
             var row, col;
             for (row=0; row < twoDimData.length; ++row){
@@ -277,29 +271,38 @@ $piidDefault->close();
             }
             htmlTable+="<tr><td>The Grand Total Capacity is:</td><td>"+grandTotal+"</td></tr>";
             htmlTable += '</table>';
-            document.getElementById("table_content4").innerHTML = htmlTable; 
-            
-            //ToDo 
-            /*below graph needs to be populated with 'twoDimData' array. 
-            So the immediate task at hand is to pass in the CORRECT FORMAT
-            twoDimData array to be represented as data object in javascript
-            then it will be displayed properly in the second chart.*/
-            var data = google.visualization.arrayToDataTable([
-              ['Task', 'Hours per Day'],
-              ['Work', 8],
-              ['Friends', 2],
-              ['Eat', 2],
-              ['TV', 2],
-              ['Gym', 2],
-              ['Sleep', 8] 
-            ]);
-
-            var options = {'title':'My Average Day', 'width':550, 'height':400};
-            var chart = new google.visualization.BarChart(document.getElementById('chart2_div'));
-            chart.draw(data, options);
-        }//end function getClickValueForSecondChart(category, defaultPiID)
-    
-    } //end drawChart()
+            document.getElementById("team_table").innerHTML = htmlTable;         
+            var cont = 1;
+            var rowtbl = document.getElementById("output_table2").rows.length;
+            rowtbl = rowtbl - 1;
+            var data = new google.visualization.arrayToDataTable([
+              [{type: 'string', label: 'Teams'}, {type: 'number', label: 'Total: '}]]);
+            while(cont <= rowtbl) { 
+              var nomi;
+              var qnt;
+              nomi = document.getElementById("output_table2").rows[cont].cells[0].innerHTML;
+              qnt = document.getElementById("output_table2").rows[cont].cells[1].innerHTML;
+              var info = {
+                name: nomi,
+                qn: qnt
+              };
+              data.addRow([
+                info.name,
+                parseFloat(info.qn)
+              ]);
+              cont = cont +1;
+            }  
+            var options = {
+              title: category + ' Total number of points by Teams',
+              is3D: 'true',
+              width: 800,
+              height: 600,
+              pieSliceText: 'value'
+            };
+            var chart = new google.visualization.BarChart(document.getElementById('team_chart'));
+                chart.draw(data, options);
+            }
+    } 
     var PI = JSON.parse('<?php echo json_encode($piidResults,JSON_HEX_TAG|JSON_HEX_APOS); ?>');
     var defaultPiID = '<?php echo $DefaultPiid; ?>'; 
   </script>
